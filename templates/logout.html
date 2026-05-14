@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Logout{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card p-4 text-center">
+      <h4>Are you sure you want to logout?</h4>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger mt-3">Yes, Logout</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

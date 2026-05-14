@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Edit Expense{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>✏️ Edit Expense</h3>
+    <form method="post">
+        {% csrf_token %}
+       <div class="mb-3">
+          <label for="date">Date</label>
+          <input type="date" name="date" id="date" value="{{ expense.date|date:'Y-m-d' }}" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label>Category</label>
+            <select name="category" class="form-select">
+                {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if expense.category.id == cat.id %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Description</label>
+            <textarea name="description" class="form-control">{{ expense.description }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label>Amount</label>
+            <input type="number" name="amount" value="{{ expense.amount }}" step="0.01" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'expense_history' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

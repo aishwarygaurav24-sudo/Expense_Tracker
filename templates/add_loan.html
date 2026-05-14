@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Loan{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Add New Loan</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label>Name</label>
+                <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label>Type</label>
+                <select name="type" class="form-control" required>
+                    <option value="me">Loan Taken by Me</option>
+                    <option value="others">Loan Given to Others</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label>Amount</label>
+                <input type="number" name="amount" class="form-control" step="0.01" required>
+            </div>
+            <div class="col-md-6">
+                <label>Interest Rate (%)</label>
+                <input type="number" name="interest_rate" class="form-control" step="0.01" value="0">
+            </div>
+            <div class="col-md-6">
+                <label>Date</label>
+                <input type="date" name="date" class="form-control" required>
+            </div>
+            <div class="col-12">
+                <label>Description</label>
+                <textarea name="description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="col-12 mt-3">
+                <button type="submit" class="btn btn-primary">Add Loan</button>
+                <a href="{% url 'loan_dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Add Daily Note{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card p-4">
+      <h3 class="mb-3 text-center">✍ Add Daily Note</h3>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Date</label>
+          <input type="date" name="date" class="form-control" value="{{ today }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Note</label>
+          <textarea name="note" rows="4" class="form-control" placeholder="Write your daily work..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success w-100">Save Note</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<form method="post">
+    {% csrf_token %}
+<div class="container mt-4">
+
+    <!-- Filters -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="post" class="d-flex gap-2 align-items-center">
+                <select name="month" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Select Month --</option>
+                    {% for num, name in months_list %}
+                        <option value="{{ num }}" {% if selected_month == num %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+
+                <input type="number" name="year" value="{{ selected_year }}" class="form-control" min="2000" max="2100" onchange="this.form.submit()"/>
+            </form>
+        </div>
+    </div>
+
+    <!-- Overbudget Alerts -->
+    {% for alert in overbudget_alerts %}
+        <div class="alert alert-warning">{{ alert }}</div>
+    {% endfor %}
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card text-center p-3 shadow-sm bg-info text-white">
+                <h5>Total Expenses</h5>
+                <p>₹{{ total_expenses }}</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-center p-3 shadow-sm bg-success text-white">
+                <h5>Total Budget</h5>
+                <p>₹{{ total_budget }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Summary Cards -->
+    <div class="row mb-4">
+        {% for cat in category_data %}
+        <div class="col-md-3 mb-2">
+            <div class="card text-center p-3 shadow-sm"
+                 style="background-color: {% if cat.total > cat.budget and cat.budget > 0 %}#f8d7da{% else %}#d1e7dd{% endif %}">
+                <h5>{{ cat.name }}</h5>
+                <p>Expense: ₹{{ cat.total }}</p>
+                <p>Budget: ₹{{ cat.budget }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Recent Expenses & Notes -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h5>Recent Expenses</h5>
+            <ul class="list-group">
+                {% for exp in recent_expenses %}
+                    <li class="list-group-item">{{ exp.date }} - {{ exp.category.name }} - ₹{{ exp.amount }} - {{ exp.description }}</li>
+                {% empty %}
+                    <li class="list-group-item text-center">No recent expenses</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h5>Recent Notes</h5>
+            <ul class="list-group">
+                {% for note in recent_notes %}
+                    <li class="list-group-item">{{ note.date }} - {{ note.note }} ({{ note.mood }})</li>
+                {% empty %}
+                    <li class="list-group-item text-center">No recent notes</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

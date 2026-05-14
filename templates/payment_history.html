@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment History - {{ loan.name }}{% endblock %}
+
+{% block content %}
+<form method="post">
+    {% csrf_token %}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Payment History - {{ loan.name }}</h2>
+
+    <!-- Filter Form -->
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label for="interest_type" class="form-label">Interest Type</label>
+            <select name="interest_type" id="interest_type" class="form-select">
+                <option value="simple" {% if interest_type == 'simple' %}selected{% endif %}>Simple</option>
+                <option value="compound" {% if interest_type == 'compound' %}selected{% endif %}>Compound</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="duration" class="form-label">Duration</label>
+            <select name="duration" id="duration" class="form-select">
+                <option value="day" {% if duration == 'day' %}selected{% endif %}>Per Day</option>
+                <option value="month" {% if duration == 'month' %}selected{% endif %}>Per Month</option>
+                <option value="year" {% if duration == 'year' %}selected{% endif %}>Per Year</option>
+            </select>
+        </div>
+        <div class="col-md-3 align-self-end">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="{% url 'payment_history' loan.id %}" class="btn btn-secondary">Reset</a>
+        </div>
+    </form>
+
+    <!-- Loan Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center p-3 shadow-sm">
+                <h6>Loan Taken Date</h6>
+                <p class="fw-bold">{{ loan_taken_date }}</p>
+                <p class="fw-bold text-primary">Amount: ₹{{ loan.amount }}</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center p-3 shadow-sm">
+                <h6>Total Paid</h6>
+                <p class="fw-bold text-success">₹{{ total_paid }}</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center p-3 shadow-sm">
+                <h6>Total Interest Paid</h6>
+                <p class="fw-bold text-warning">₹{{ total_interest_paid }}</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center p-3 shadow-sm">
+                <h6>Total Interest Due</h6>
+                <p class="fw-bold text-danger">₹{{ total_interest_due }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remaining Till Today -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card text-center p-3 shadow-sm bg-light">
+                <h6>Remaining Till Today ({{ today }})</h6>
+                <p class="fw-bold text-primary">₹{{ remaining_till_today }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h6>Repayment Progress</h6>
+            <div class="progress" style="height: 25px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated 
+                    {% if remaining_till_today == 0 %}bg-success{% else %}bg-info{% endif %}" 
+                    role="progressbar" 
+                    style="width: {{ progress_percent }}%" 
+                    aria-valuenow="{{ total_paid }}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="{{ total_paid|add:remaining_till_today }}">
+                    {{ progress_percent }}%
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment History Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Payments</h5>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th>
+                        <th>Note</th>
+                        <th>Amount Paid</th>
+                        <th>Interest Accrued</th>
+                        <th>Remaining Balance</th>
+                        <th>Interest Till Today</th>
+                        <th>Total Due</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if payments %}
+                        {% for p in payments %}
+                        <tr>
+                            <td>{{ p.payment.date }}</td>
+                            <td>{{ p.payment.note|default:"-" }}</td>
+                            <td class="text-success">₹{{ p.payment.amount_paid }}</td>
+                            <td class="text-warning">₹{{ p.interest_accrued }}</td>
+                            <td class="fw-bold text-primary">₹{{ p.remaining_balance }}</td>
+                            <td class="text-danger">₹{{ p.interest_till_today }}</td>
+                            <td class="fw-bold {% if p.total_due == 0 %}text-success{% else %}text-danger{% endif %}">
+                                ₹{{ p.total_due }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">No payments made yet.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <!-- Pagination Controls -->
+            {% if page_obj and page_obj.paginator.num_pages > 1 %}
+            <nav>
+              <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                  <li class="page-item"><a class="page-link" href="?page=1&interest_type={{ interest_type }}&duration={{ duration }}">First</a></li>
+                  <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&interest_type={{ interest_type }}&duration={{ duration }}">Previous</a></li>
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">First</span></li>
+                  <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+                {% if page_obj.has_next %}
+                  <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&interest_type={{ interest_type }}&duration={{ duration }}">Next</a></li>
+                  <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&interest_type={{ interest_type }}&duration={{ duration }}">Last</a></li>
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">Next</span></li>
+                  <li class="page-item disabled"><span class="page-link">Last</span></li>
+                {% endif %}
+              </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="mt-3">
+        <a href="{% url 'loan_dashboard' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+    </form>
+</div>
+{% endblock %}

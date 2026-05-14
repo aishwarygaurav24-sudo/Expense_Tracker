@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Loan Dashboard{% endblock %}
+
+{% block content %}
+<form method="post">
+    {% csrf_token %}
+
+<div class="container mt-4">
+    <h2 class="mb-4 text-center fw-bold">📊 Loan Dashboard</h2>
+
+    <!-- Filter Section -->
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Name</label>
+            <input type="text" name="name" class="form-control" placeholder="Search by name..." value="{{ filter_name }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Loan Type</label>
+            <select name="loan_type" class="form-select">
+                <option value="">All</option>
+                <option value="me" {% if filter_type == "me" %}selected{% endif %}>Loan Taken by Me</option>
+                <option value="others" {% if filter_type == "others" %}selected{% endif %}>Loan Given to Others</option>
+            </select>
+        </div>
+
+        <div class="col-12 text-end">
+            <button type="submit" class="btn btn-primary px-4">Filter</button>
+            <a href="{% url 'loan_dashboard' %}" class="btn btn-outline-secondary px-3">Reset</a>
+        </div>
+    </form>
+
+    <!-- Summary Section -->
+    <div class="row mb-4 text-center">
+        <div class="col-md-2 col-6 mb-3">
+            <div class="card p-3 shadow-sm border-start border-primary border-4">
+                <h6>Total Taken</h6>
+                <h5 class="fw-bold text-primary">₹{{ total_taken }}</h5>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="card p-3 shadow-sm border-start border-success border-4">
+                <h6>Total Given</h6>
+                <h5 class="fw-bold text-success">₹{{ total_given }}</h5>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="card p-3 shadow-sm border-start border-info border-4">
+                <h6>Total Paid</h6>
+                <h5 class="fw-bold text-info">₹{{ total_paid }}</h5>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="card p-3 shadow-sm border-start border-warning border-4">
+                <h6>Principal Remaining</h6>
+                <h5 class="fw-bold text-warning">₹{{ total_remaining }}</h5>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="card p-3 shadow-sm border-start border-danger border-4" data-bs-toggle="tooltip" title="Total Interest accumulated so far.">
+                <h6>Total Interest</h6>
+                <h5 class="fw-bold text-danger">₹{{ total_interest }}</h5>
+            </div>
+        </div>
+        <div class="col-md-2 col-6 mb-3">
+            <div class="card p-3 shadow-sm border-start border-dark border-4" data-bs-toggle="tooltip" title="Total amount = Remaining Principal + Interest till Today.">
+                <h6>Total Due</h6>
+                <h5 class="fw-bold text-dark">₹{{ total_due }}</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan Details Table -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">📋 Loan Details</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Paid</th>
+                            <th>Principal Remaining</th>
+                            <th>Interest</th>
+                            <th>Total Due</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in loan_summary %}
+                        {% with remaining=item.principal_remaining due=item.total_due %}
+                        <tr class="{% if remaining == 0 %}table-success{% elif due > remaining %}table-warning{% endif %}">
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.loan.name }}</td>
+                            <td>
+                                {% if item.loan.type == 'me' %}
+                                    <span class="badge bg-primary">Taken</span>
+                                {% else %}
+                                    <span class="badge bg-success">Given</span>
+                                {% endif %}
+                            </td>
+                            <td>₹{{ item.loan.amount }}</td>
+                            <td>₹{{ item.paid }}</td>
+                            <td>₹{{ item.principal_remaining }}</td>
+                            <td>
+                                ₹{{ item.interest }}
+                                <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Interest calculated on remaining principal till today."></i>
+                            </td>
+                            <td class="fw-bold text-danger">₹{{ item.total_due }}</td>
+                            <td>{{ item.loan.date|date:"d M, Y" }}</td>
+                            <td>
+                                {% if item.principal_remaining == 0 %}
+                                    <span class="badge bg-success">Cleared</span>
+                                {% elif item.total_due > item.loan.amount %}
+                                    <span class="badge bg-danger">Accruing Interest</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Ongoing</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                    <a href="{% url 'add_payment' item.loan.id %}" class="btn btn-sm btn-success">Add Payment</a>
+                                    <a href="{% url 'payment_history' item.loan.id %}" class="btn btn-sm btn-outline-primary">History</a>
+                                    <a href="{% url 'edit_loan' item.loan.id %}" class="btn btn-sm btn-warning">Edit</a>
+                                    <form method="post" action="{% url 'delete_loan' item.loan.id %}" style="display:inline-block" onsubmit="return confirm('Delete this loan?')">
+                                        {% csrf_token %}
+                                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                                    </form>
+
+                                    <!-- PDF / Excel buttons -->
+                                    <div class="btn-group">
+                                        <a href="{% url 'export_loan_history_pdf' item.loan.id %}" class="btn btn-outline-secondary btn-sm">PDF</a>
+                                        <a href="{% url 'export_loan_history_excel' item.loan.id %}" class="btn btn-outline-secondary btn-sm">Excel</a>
+                                    </div>
+
+                                    <!-- 🧾 Download Receipt (Only if Cleared) -->
+                                    {% if item.principal_remaining == 0 %}
+                                        {% with receipt=item.loan.loanreceipt_set.first %}
+                                        {% if receipt %}
+                                            <a href="{% url 'download_receipt' receipt.id %}" class="btn btn-sm btn-primary">
+                                                🧾 Download Receipt
+                                            </a>
+                                        {% endif %}
+                                        {% endwith %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" class="text-center text-muted py-3">No loans found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </form>
+    </div>
+
+    <!-- Add Loan Button -->
+    <div class="text-end mt-3">
+        <a href="{% url 'add_loan' %}" class="btn btn-lg btn-primary">
+            ➕ Add New Loan
+        </a>
+    </div>
+</div>
+
+<!-- Enable Tooltips -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el))
+})
+</script>
+
+<style>
+    .card { border-radius: 12px; }
+    th, td { vertical-align: middle; }
+</style>
+{% endblock %}

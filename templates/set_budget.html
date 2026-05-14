@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Set Budget{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-3">🎯 Set Category-wise Budget</h3>
+
+    <!-- Toast Messages -->
+    {% if messages %}
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+            {% for message in messages %}
+                <div class="toast align-items-center text-bg-{{ message.tags }} border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            {{ message }}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Budget Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="category">Category</label>
+                        <select name="category" id="category" class="form-control" required>
+                            <option value="">-- Select Category --</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="limit">Budget Limit (₹)</label>
+                        <input type="number" step="0.01" name="limit" id="limit" class="form-control" placeholder="Enter amount" required>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="month">Month</label>
+                        <select name="month" id="month" class="form-control">
+                            <option value="">-- Select --</option>
+                            {% for i, name in months_list %}
+                                <option value="{{ i }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="year">Year</label>
+                        <input type="number" name="year" id="year" value="{{ now.year }}" min="2000" max="2100" class="form-control" required>
+                    </div>
+
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Existing Budgets Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">📊 Your Budgets</div>
+        <div class="card-body p-0">
+            {% if budgets %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Category</th>
+                                <th>Limit (₹)</th>
+                                <th>Period</th>
+                                <th style="width: 140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in budgets %}
+                                <tr>
+                                    <td><strong>{{ b.category.name }}</strong></td>
+                                    <td class="text-success fw-bold">₹{{ b.limit }}</td>
+                                    <td>
+                                        {% if b.month %}
+                                            {% for i, name in months_list %}
+                                                {% if i == b.month %}
+                                                    {{ name }} / {{ b.year }}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            Yearly ({{ b.year }})
+                                        {% endif %}
+                                    </td>
+                                    <td class="d-flex gap-1">
+                                        <!-- Edit Button triggers Modal -->
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editBudgetModal{{ b.id }}">
+                                            ✏️
+                                        </button>
+
+                                        <!-- Delete Button -->
+                                        <a href="{% url 'delete_budget' b.id %}" class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Are you sure you want to delete this budget?');">
+                                           🗑️
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                <!-- Edit Modal -->
+                                <div class="modal fade" id="editBudgetModal{{ b.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'edit_budget' b.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Edit Budget - {{ b.category.name }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label>Category</label>
+                                                        <select name="category" class="form-control" required>
+                                                            {% for cat in categories %}
+                                                                <option value="{{ cat.id }}" {% if cat.id == b.category.id %}selected{% endif %}>{{ cat.name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Budget Limit (₹)</label>
+                                                        <input type="number" step="0.01" name="limit" class="form-control" value="{{ b.limit }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Month</label>
+                                                        <select name="month" class="form-control">
+                                                            <option value="">-- Select --</option>
+                                                            {% for i, name in months_list %}
+                                                                <option value="{{ i }}" {% if b.month == i %}selected{% endif %}>{{ name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>Year</label>
+                                                        <input type="number" name="year" class="form-control" value="{{ b.year }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-primary">Update</button>
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center text-muted py-3 mb-0">No budgets set yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Toast Auto-hide JS -->
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+    var toastList = toastElList.map(function(toastEl){
+        var t = new bootstrap.Toast(toastEl, { delay: 3000 });
+        t.show();
+        return t;
+    });
+});
+</script>
+{% endblock %}

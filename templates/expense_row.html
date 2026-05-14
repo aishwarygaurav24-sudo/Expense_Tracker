@@ -1,0 +1,31 @@
+<tr id="expense-{{ exp.id }}">
+    <td>{{ exp.date }}</td>
+    <td>{{ exp.category.name }}</td>
+    <td style="max-width:200px; white-space:pre-wrap;">{{ exp.description|default:"-" }}</td>
+    <td class="text-success fw-bold">₹{{ exp.amount }}</td>
+
+    {% for c in category_data %}
+        {% if c.category.id == exp.category.id %}
+            <td>₹{{ c.budget }}</td>
+            <td>
+                {% if c.overbudget %}
+                    <span class="badge bg-danger">Yes</span>
+                {% else %}
+                    <span class="badge bg-success">No</span>
+                {% endif %}
+            </td>
+        {% endif %}
+    {% endfor %}
+
+    <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                data-bs-toggle="modal"
+                data-bs-target="#editExpenseModal"
+                data-expense-id="{{ exp.id }}">
+            Edit
+        </button>
+        <button class="btn btn-sm btn-outline-danger delete-expense-btn" data-id="{{ exp.id }}">
+            Delete
+        </button>
+    </td>
+</tr>

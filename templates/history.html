@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Expense History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-3">📜 Expense History</h3>
+
+  <!-- Filter Form -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="post" class="row g-3 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-3">
+          <label for="month" class="form-label">Month</label>
+          <select name="month" id="month" class="form-select">
+            <option value="">All</option>
+            {% for i, m in months %}
+              <option value="{{ i }}" {% if selected_month|default:'' == i|stringformat:"s" %}selected{% endif %}>
+                {{ m }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label for="year" class="form-label">Year</label>
+          <input
+            type="number"
+            name="year"
+            id="year"
+            class="form-control"
+            value="{{ selected_year|default:current_year }}"
+          />
+        </div>
+
+        <div class="col-md-3">
+          <label for="category" class="form-label">Category</label>
+          <select name="category" id="category" class="form-select">
+            <option value="">All</option>
+            {% for cat in categories %}
+              <option value="{{ cat.id }}" {% if selected_category|default:'' == cat.id|stringformat:"s" %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-dark w-100">
+            <i class="bi bi-funnel"></i> Filter
+          </button>
+          <a href="{% url 'expense_history' %}" class="btn btn-secondary w-100">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Download PDF -->
+  <div class="text-end mb-3">
+    <a href="{% url 'download_receipt' %}?month={{ selected_month }}&year={{ selected_year }}&category={{ selected_category }}"
+       class="btn btn-success">
+      <i class="bi bi-download"></i> Download PDF Report
+    </a>
+  </div>
+
+  <!-- Expense Table -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+      <h5 class="mb-0">Expenses</h5>
+    </div>
+    <div class="card-body table-responsive">
+      <table class="table table-striped table-bordered align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Budget</th>
+            <th>OverBudget</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if expenses %}
+            {% for exp in expenses %}
+            <tr>
+              <td>{{ exp.date }}</td>
+              <td>{{ exp.category.name }}</td>
+              <td style="max-width:200px; white-space:pre-wrap;">{{ exp.description|default:"-" }}</td>
+              <td class="text-success fw-bold">₹{{ exp.amount }}</td>
+
+              {% for c in category_data %}
+                {% if c.category.id == exp.category.id %}
+                  <td>₹{{ c.budget }}</td>
+                  <td>
+                    {% if c.overbudget %}
+                      <span class="badge bg-danger">Yes</span>
+                    {% else %}
+                      <span class="badge bg-success">No</span>
+                    {% endif %}
+                  </td>
+                {% endif %}
+              {% endfor %}
+
+              <td class="text-center">
+                <a href="{% url 'edit_expense' exp.id %}" class="btn btn-sm btn-primary me-1">Edit</a>
+                <form method="post" action="{% url 'delete_expense' exp.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                    Delete
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">No expenses found.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

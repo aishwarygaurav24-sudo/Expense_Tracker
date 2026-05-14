@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Payment{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add Payment for {{ loan.name }}</h2>
+    
+    <!-- Payment Form -->
+    <form method="post" class="row g-3">
+        {% csrf_token %}
+        <div class="col-md-6">
+            <label>Amount Paid (₹)</label>
+            <input type="number" name="amount_paid" step="0.01" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+            <label>Date</label>
+            <input type="date" name="date" class="form-control" required>
+        </div>
+        <div class="col-12">
+            <label>Note</label>
+            <textarea name="note" class="form-control"></textarea>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-success">Add Payment</button>
+            <a href="{% url 'loan_dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <!-- Download Receipt (if loan cleared) -->
+    {% if loan.principal_remaining == 0 %}
+        {% with receipt=loan.loanreceipt_set.first %}
+        {% if receipt %}
+            <div class="mt-4">
+                <h5>🎉 Loan Cleared!</h5>
+                <a href="{% url 'download_receipt' receipt.id %}" class="btn btn-primary">
+                    🧾 Download Receipt
+                </a>
+            </div>
+        {% endif %}
+        {% endwith %}
+    {% endif %}
+</div>
+
+{% endblock %}
